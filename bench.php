@@ -198,20 +198,20 @@ echo $isCli ? '' : '<pre>';
 $p('', '', '-');
 printf('|%s|%s', str_pad(sprintf("PHP BENCHMARK SCRIPT v.%s by @SergiX44", $V), $w - 2, ' ', STR_PAD_BOTH), $lf);
 $p('', '', '-');
-$p('PHP version', PHP_VERSION);
+$p('PHP', PHP_VERSION);
 $p('Platform', PHP_OS);
 if ($isCli) {
-    $p('Server:', gethostname());
+    $p('Server', gethostname());
 } else {
     $name = @$_SERVER['SERVER_NAME'] ?: 'null';
     $addr = @$_SERVER['SERVER_ADDR'] ?: 'null';
-    $p('Server:', "{$name}@{$addr}");
+    $p('Server', "{$name}@{$addr}");
 }
 $opStatus = function_exists('opcache_get_status') ? opcache_get_status() : false;
-$p('OPCache status:', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
-$p('OPCache JIT:', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
-$p('PCRE JIT:', ini_get('pcre.jit') ? 'enabled' : 'disabled');
-$p('Started at:', DateTime::createFromFormat('U.u', microtime(true))->format('d/m/Y H:i:s.v'));
+$p('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
+$p('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
+$p('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
+$p('Started at', DateTime::createFromFormat('U.u', microtime(true))->format('d/m/Y H:i:s.v'));
 $p('', '', '-');
 
 $stopwatch = new StopWatch();
