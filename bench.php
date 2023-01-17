@@ -211,6 +211,7 @@ $opStatus = function_exists('opcache_get_status') ? opcache_get_status() : false
 $p('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
 $p('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
 $p('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
+$p('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
 $p('Started at', DateTime::createFromFormat('U.u', microtime(true))->format('d/m/Y H:i:s.v'));
 $p('', '', '-');
 
