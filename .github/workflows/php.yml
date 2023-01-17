@@ -25,5 +25,17 @@ jobs:
           extensions: opcache
           coverage: none
 
-      - name: Run
+      - name: Run (1)
+        run: php -d opcache.enable=1 -d opcache.enable_cli=1 -d pcre.jit=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=32M bench.php
+
+      - name: Run (2)
+        run: php -d opcache.enable=1 -d opcache.enable_cli=1 -d pcre.jit=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=32M bench.php
+
+      - name: Run (3)
+        run: php -d opcache.enable=1 -d opcache.enable_cli=1 -d pcre.jit=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=32M bench.php
+
+      - name: Run (4)
+        run: php -d opcache.enable=1 -d opcache.enable_cli=1 -d pcre.jit=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=32M bench.php
+
+      - name: Run (5)
         run: php -d opcache.enable=1 -d opcache.enable_cli=1 -d pcre.jit=1 -d opcache.jit=tracing -d opcache.jit_buffer_size=32M bench.php
