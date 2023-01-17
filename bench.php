@@ -52,9 +52,13 @@ $benchmarks = [
         return $x;
     },
     'loops' => function ($count = 20000000) {
-        for ($i = 0; $i < $count; ++$i) ;
+        for ($i = 0; $i < $count; ++$i) {
+            ;
+        }
         $i = 0;
-        while ($i < $count) ++$i;
+        while ($i < $count) {
+            ++$i;
+        }
         return $i;
     },
     'ifelse' => function ($count = 10000000) {
@@ -187,7 +191,7 @@ $p = function ($str, $endStr = '', $pad = '.') use ($w, $lf) {
         $endStr = " $endStr";
     }
     $length = max(0, $w - strlen($endStr));
-    echo str_pad($str, $length, $pad) . $endStr . $lf;
+    echo str_pad($str, $length, $pad).$endStr.$lf;
 };
 
 echo $isCli ? '' : '<pre>';
@@ -203,7 +207,7 @@ if ($isCli) {
     $addr = @$_SERVER['SERVER_ADDR'] ?: 'null';
     $p('Server:', "{$name}@{$addr}");
 }
-$opStatus = opcache_get_status();
+$opStatus = function_exists('opcache_get_status') ? opcache_get_status() : false;
 $p('OPCache status:', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
 $p('OPCache JIT:', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
 $p('PCRE JIT:', ini_get('pcre.jit') ? 'enabled' : 'disabled');
@@ -216,11 +220,11 @@ foreach ($benchmarks as $name => $benchmark) {
     $stopwatch->start();
     $benchmark();
     $time = $stopwatch->stop();
-    $p($name, number_format($time, 4) . ' s');
+    $p($name, number_format($time, 4).' s');
 }
 $p('', '', '-');
-$p('Total time', number_format($stopwatch->totalTime, 4) . ' s');
-$p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
+$p('Total time', number_format($stopwatch->totalTime, 4).' s');
+$p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2).' MiB');
 
 echo $isCli ? '' : '</pre>';
 
