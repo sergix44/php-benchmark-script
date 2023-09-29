@@ -1,10 +1,78 @@
 <?php
+error_reporting(E_ALL);
+ini_set ('display_startup_errors', 1);
+ini_set ('display_errors', 1);
+set_time_limit(180);
 
 $V = '1.0';
+
+$filePathPrefix = './6RgiwkCOIh8UrZE3';
+
 
 /** @var array<string, callable> $benchmarks */
 // the benchmarks!
 $benchmarks = [
+    'file-write' => function ($count = 1000)
+    {
+        global $filePathPrefix;
+
+        $content = 'rnsyE8FfR6gh4FPD';
+        for($i = 0; $i < $count; $i++)
+        {
+            $f = fopen($filePathPrefix . '_' . $i, 'w');
+            fwrite($f, $content);
+            fclose($f);
+        }
+    },
+    'file-read' => function ($count = 1000)
+    {
+        global $filePathPrefix;
+
+        for($i = 0; $i < $count; $i++)
+        {
+            $f = fopen($filePathPrefix . '_' . $i, 'r');
+            $content = fread($f, 16);
+            fclose($f);
+        }
+    },
+
+    'file-zip' => function ($count = 1000)
+    {
+        global $filePathPrefix;
+
+        $zip = new ZipArchive();
+        $x = $zip->open($filePathPrefix . '.zip', ZipArchive::CREATE);
+        
+        for($i = 0; $i < $count; $i++)
+        {
+            $zip->addFile($filePathPrefix . '_' . $i);
+        }
+
+        $zip->close();
+    },
+    'file-delete' => function ($count = 1000)
+    {
+        global $filePathPrefix;
+
+        for($i = 0; $i < $count; $i++)
+        {
+            unlink($filePathPrefix . '_' . $i);
+        }
+    },
+    'file-unzip' => function ()
+    {
+        global $filePathPrefix;
+
+        $nullDevice = strtolower(substr(PHP_OS, 0, 3)) === 'win' ? './temp.zip' : '/dev/null';
+
+        $zip = new ZipArchive();
+        $zip->open($filePathPrefix . '.zip');
+        $zip->extractTo($nullDevice);
+
+        $zip->close();
+
+        unlink($filePathPrefix . '.zip');
+    },
     'math' => function ($count = 200000) {
         $x = 0;
         for ($i = 0; $i < $count; $i++) {
@@ -178,7 +246,7 @@ $benchmarks = [
             is_object('hi');
         }
         return $o;
-    },
+    }
 ];
 
 
@@ -223,6 +291,8 @@ foreach ($benchmarks as $name => $benchmark) {
     $time = $stopwatch->stop();
     $p($name, number_format($time, 4).' s');
 }
+
+
 $p('', '', '-');
 $p('Total time', number_format($stopwatch->totalTime, 4).' s');
 $p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2).' MiB');
