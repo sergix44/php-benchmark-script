@@ -2,12 +2,16 @@
 
 $V = '1.0';
 
+// Increase the multiplier if you want to benchmark longer
+$multiplier = 1.0;
+
 /** @var array<string, callable> $benchmarks */
 // the benchmarks!
 $benchmarks = [
     'math' => function ($count = 200000) {
+        global $multiplier;
         $x = 0;
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             $x += $i + $i;
             $x += $i * $i;
             $x += $i ** $i;
@@ -52,19 +56,21 @@ $benchmarks = [
         return $x;
     },
     'loops' => function ($count = 20000000) {
-        for ($i = 0; $i < $count; ++$i) {
+        global $multiplier;
+        for ($i = 0; $i < $count * $multiplier; ++$i) {
             ;
         }
         $i = 0;
-        while ($i < $count) {
+        while ($i < $count * $multiplier) {
             ++$i;
         }
         return $i;
     },
     'ifelse' => function ($count = 10000000) {
+        global $multiplier;
         $a = 0;
         $b = 0;
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             $k = $i % 4;
             if ($k === 0) {
                 $i;
@@ -79,9 +85,10 @@ $benchmarks = [
         return $a - $b;
     },
     'switch' => function ($count = 10000000) {
+        global $multiplier;
         $a = 0;
         $b = 0;
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             switch ($i % 4) {
                 case 0:
                     $i;
@@ -99,8 +106,9 @@ $benchmarks = [
         return $a - $b;
     },
     'strings' => function ($count = 50000) {
+        global $multiplier;
         $string = '<i>the</i> quick brown fox jumps over the lazy dog  ';
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             addslashes($string);
             bin2hex($string);
             chunk_split($string);
@@ -135,8 +143,9 @@ $benchmarks = [
         return $string;
     },
     'array' => function ($count = 50000) {
+        global $multiplier;
         $a = range(0, 100);
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             array_keys($a);
             array_values($a);
             array_flip($a);
@@ -153,15 +162,17 @@ $benchmarks = [
         return $a;
     },
     'regex' => function ($count = 1000000) {
-        for ($i = 0; $i < $count; $i++) {
+        global $multiplier;
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             preg_match("#http[s]?://\w+[^\s\[\]\<]+#", 'this is a link to https://google.com which is a really popular site');
             preg_replace("#(^|\s)(http[s]?://\w+[^\s\[\]\<]+)#i", '\1<a href="\2">\2</a>', 'this is a link to https://google.com which is a really popular site');
         }
         return $i;
     },
     'is_{type}' => function ($count = 2500000) {
+        global $multiplier;
         $o = new stdClass();
-        for ($i = 0; $i < $count; $i++) {
+        for ($i = 0; $i < $count * $multiplier; $i++) {
             is_array([1]);
             is_array('1');
             is_int(1);
@@ -212,6 +223,7 @@ $p('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'ena
 $p('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
 $p('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
 $p('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
+$p('Benchmark Multiplier', $multiplier);
 $p('Started at', DateTime::createFromFormat('U.u', microtime(true))->format('d/m/Y H:i:s.v'));
 $p('', '', '-');
 
