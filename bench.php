@@ -266,7 +266,7 @@ $now = DateTime::createFromFormat('U.u', $mtime);
 $V = '2.0';
 $isCli = PHP_SAPI === 'cli';
 $lf = $isCli ? PHP_EOL : '<br>';
-$w = 50;
+$w = 55;
 $multiplier = $args['multiplier'];
 $additionalBenchmarks = loadAdditionalBenchmarks();
 
@@ -418,9 +418,9 @@ function loadAdditionalBenchmarks()
 
 function runBenchmark($stopwatch, $name, $benchmark, $multiplier = 1)
 {
-    $stopwatch->start();
     $r = null;
     try {
+        $stopwatch->start();
         $r = $benchmark($multiplier);
     } catch (Exception $e) {
         return 'ERROR: ' . $e->getMessage();
