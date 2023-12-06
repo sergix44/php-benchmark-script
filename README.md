@@ -27,9 +27,12 @@ php bench.php --multiplier=2
 You must have the `bench.php` file to your server.
 You can download additional benchmarks (must be in the same directory as `bench.php`) using:
 
+Available tests:
 ```sh
 # rand: random number generation
 wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/rand.bench.php
+# io: file read/write/zip/unzip
+wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/io.bench.php
 ```
 
 Then you can run the benchmark using:
