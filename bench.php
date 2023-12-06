@@ -1,17 +1,25 @@
 <?php
 
-$V = '1.0';
+if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION === 5 && PHP_MINOR_VERSION < 6)) {
+    echo 'This script requires PHP 5.6 or higher.';
+    exit(1);
+}
 
-// Increase the multiplier if you want to benchmark longer
-$multiplier = 1.0;
+$defaultArgs = [
+    // Increase the multiplier if you want to benchmark longer
+    'multiplier' => 1.0,
+];
+
+$args = get_args($defaultArgs);
+$args = array_merge($defaultArgs, $args);
 
 /** @var array<string, callable> $benchmarks */
 // the benchmarks!
 $benchmarks = [
-    'math' => function ($count = 200000) {
-        global $multiplier;
+    'math' => function ($multiplier = 1, $count = 200000) {
         $x = 0;
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             $x += $i + $i;
             $x += $i * $i;
             $x += $i ** $i;
@@ -53,24 +61,24 @@ $benchmarks = [
             tanh($i);
         }
 
-        return $x;
+        return $i;
     },
-    'loops' => function ($count = 20000000) {
-        global $multiplier;
-        for ($i = 0; $i < $count * $multiplier; ++$i) {
-            ;
+    'loops' => function ($multiplier = 1, $count = 20000000) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; ++$i) {
+            $i;
         }
         $i = 0;
-        while ($i < $count * $multiplier) {
+        while ($i < $count) {
             ++$i;
         }
         return $i;
     },
-    'ifelse' => function ($count = 10000000) {
-        global $multiplier;
+    'ifelse' => function ($multiplier = 1, $count = 10000000) {
         $a = 0;
         $b = 0;
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             $k = $i % 4;
             if ($k === 0) {
                 $i;
@@ -79,16 +87,16 @@ $benchmarks = [
             } elseif ($k === 2) {
                 $b = $i;
             } else {
-
+                $i;
             }
         }
         return $a - $b;
     },
-    'switch' => function ($count = 10000000) {
-        global $multiplier;
+    'switch' => function ($multiplier = 1, $count = 10000000) {
         $a = 0;
         $b = 0;
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             switch ($i % 4) {
                 case 0:
                     $i;
@@ -105,10 +113,10 @@ $benchmarks = [
         }
         return $a - $b;
     },
-    'strings' => function ($count = 50000) {
-        global $multiplier;
+    'string' => function ($multiplier = 1, $count = 50000) {
         $string = '<i>the</i> quick brown fox jumps over the lazy dog  ';
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             addslashes($string);
             bin2hex($string);
             chunk_split($string);
@@ -142,10 +150,10 @@ $benchmarks = [
         }
         return $string;
     },
-    'array' => function ($count = 50000) {
-        global $multiplier;
+    'array' => function ($multiplier = 1, $count = 50000) {
         $a = range(0, 100);
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             array_keys($a);
             array_values($a);
             array_flip($a);
@@ -161,18 +169,19 @@ $benchmarks = [
         }
         return $a;
     },
-    'regex' => function ($count = 1000000) {
-        global $multiplier;
+    'regex' => function ($multiplier = 1, $count = 1000000) {
         for ($i = 0; $i < $count * $multiplier; $i++) {
-            preg_match("#http[s]?://\w+[^\s\[\]\<]+#", 'this is a link to https://google.com which is a really popular site');
-            preg_replace("#(^|\s)(http[s]?://\w+[^\s\[\]\<]+)#i", '\1<a href="\2">\2</a>', 'this is a link to https://google.com which is a really popular site');
+            preg_match("#http[s]?://\w+[^\s\[\]\<]+#",
+                'this is a link to https://google.com which is a really popular site');
+            preg_replace("#(^|\s)(http[s]?://\w+[^\s\[\]\<]+)#i", '\1<a href="\2">\2</a>',
+                'this is a link to https://google.com which is a really popular site');
         }
         return $i;
     },
-    'is_{type}' => function ($count = 2500000) {
-        global $multiplier;
+    'is_{type}' => function ($multiplier = 1, $count = 2500000) {
         $o = new stdClass();
-        for ($i = 0; $i < $count * $multiplier; $i++) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
             is_array([1]);
             is_array('1');
             is_int(1);
@@ -190,19 +199,83 @@ $benchmarks = [
         }
         return $o;
     },
+    'hash' => function ($multiplier = 1, $count = 10000) {
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
+            md5($i);
+            sha1($i);
+            hash('sha256', $i);
+            hash('sha512', $i);
+            hash('ripemd160', $i);
+            hash('crc32', $i);
+            hash('crc32b', $i);
+            hash('adler32', $i);
+            hash('fnv132', $i);
+            hash('fnv164', $i);
+            hash('joaat', $i);
+            hash('haval128,3', $i);
+            hash('haval160,3', $i);
+            hash('haval192,3', $i);
+            hash('haval224,3', $i);
+            hash('haval256,3', $i);
+            hash('haval128,4', $i);
+            hash('haval160,4', $i);
+            hash('haval192,4', $i);
+            hash('haval224,4', $i);
+            hash('haval256,4', $i);
+            hash('haval128,5', $i);
+            hash('haval160,5', $i);
+            hash('haval192,5', $i);
+            hash('haval224,5', $i);
+            hash('haval256,5', $i);
+        }
+        return $i;
+    },
+    'json' => function ($multiplier = 1, $count = 100000) {
+        $data = [
+            'foo' => 'bar',
+            'bar' => 'baz',
+            'baz' => 'qux',
+            'qux' => 'quux',
+            'quux' => 'corge',
+            'corge' => 'grault',
+            'grault' => 'garply',
+            'garply' => 'waldo',
+            'waldo' => 'fred',
+            'fred' => 'plugh',
+            'plugh' => 'xyzzy',
+            'xyzzy' => 'thud',
+            'thud' => 'end',
+        ];
+        $count = $count * $multiplier;
+        for ($i = 0; $i < $count; $i++) {
+            json_encode($data);
+            json_decode(json_encode($data));
+        }
+        return $data;
+    },
 ];
 
+$mtime = microtime(true);
+// workaround for https://www.php.net/manual/en/datetime.createfromformat.php#128901
+if (fmod($mtime, 1) === .0000) {
+    $mtime += .0001;
+}
+$now = DateTime::createFromFormat('U.u', $mtime);
 
-$isCli = php_sapi_name() === 'cli';
+$V = '2.0';
+$isCli = PHP_SAPI === 'cli';
 $lf = $isCli ? PHP_EOL : '<br>';
-$w = 50;
+$w = 55;
+$multiplier = $args['multiplier'];
+$additionalBenchmarks = loadAdditionalBenchmarks();
 
-$p = function ($str, $endStr = '', $pad = '.') use ($w, $lf) {
+$p = function ($str, $endStr = '', $pad = '.', $mode = STR_PAD_RIGHT) use ($w, $lf) {
     if (!empty($endStr)) {
         $endStr = " $endStr";
     }
     $length = max(0, $w - strlen($endStr));
-    echo str_pad($str, $length, $pad).$endStr.$lf;
+    echo str_pad($str, $length, $pad, $mode) . $endStr . $lf;
 };
 
 echo $isCli ? '' : '<pre>';
@@ -211,6 +284,7 @@ printf('|%s|%s', str_pad(sprintf("PHP BENCHMARK SCRIPT v.%s by @SergiX44", $V), 
 $p('', '', '-');
 $p('PHP', PHP_VERSION);
 $p('Platform', PHP_OS);
+$p('Arch', php_uname('m'));
 if ($isCli) {
     $p('Server', gethostname());
 } else {
@@ -218,26 +292,34 @@ if ($isCli) {
     $addr = @$_SERVER['SERVER_ADDR'] ?: 'null';
     $p('Server', "{$name}@{$addr}");
 }
+$p('Max memory usage', ini_get('memory_limit'));
 $opStatus = function_exists('opcache_get_status') ? opcache_get_status() : false;
 $p('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
 $p('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
 $p('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
 $p('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
-$p('Benchmark Multiplier', $multiplier);
-$p('Started at', DateTime::createFromFormat('U.u', microtime(true))->format('d/m/Y H:i:s.v'));
-$p('', '', '-');
+$p('Difficulty multiplier', "{$multiplier}x");
+$p('Started at', $now->format('d/m/Y H:i:s.v'));
+$p('', '', '-', STR_PAD_BOTH);
 
 $stopwatch = new StopWatch();
 
 foreach ($benchmarks as $name => $benchmark) {
-    $stopwatch->start();
-    $benchmark();
-    $time = $stopwatch->stop();
-    $p($name, number_format($time, 4).' s');
+    $time = runBenchmark($stopwatch, $name, $benchmark, $multiplier);
+    $p($name, $time);
 }
+
+if (!empty($additionalBenchmarks)) {
+    $p('Additional Benchmarks', '', '-', STR_PAD_BOTH);
+    foreach ($additionalBenchmarks as $name => $benchmark) {
+        $time = runBenchmark($stopwatch, $name, $benchmark, $multiplier);
+        $p($name, $time);
+    }
+}
+
 $p('', '', '-');
-$p('Total time', number_format($stopwatch->totalTime, 4).' s');
-$p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2).' MiB');
+$p('Total time', number_format($stopwatch->totalTime, 4) . ' s');
+$p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
 
 echo $isCli ? '' : '</pre>';
 
@@ -278,4 +360,77 @@ class StopWatch
     {
         return function_exists('hrtime') ? hrtime(true) / 1e9 : microtime(true);
     }
+}
+
+function get_args($expectedArgs)
+{
+    $args = [];
+
+    if (PHP_SAPI === 'cli') {
+        $cleanedArgs = array_map(function ($arg) {
+            return strpos($arg, '--') !== 0 ? null : str_replace('--', '', $arg);
+        }, $GLOBALS['argv']);
+
+        parse_str(implode('&', array_filter($cleanedArgs)), $args);
+    } else {
+        parse_str($_SERVER['QUERY_STRING'], $args);
+    }
+
+    $args = array_intersect_key($args, array_flip(array_keys($expectedArgs)));
+
+    // cast the type to the original type if needed
+    foreach ($expectedArgs as $key => $value) {
+        if (isset($args[$key])) {
+            settype($args[$key], gettype($value));
+        }
+    }
+
+    return $args;
+}
+
+function loadAdditionalBenchmarks()
+{
+    $benchmarks = [];
+    $benchFiles = glob(__DIR__ . '/./*.bench.php');
+    foreach ($benchFiles as $benchFile) {
+        $benchName = basename($benchFile, '.bench.php');
+        $newBenchmark = require $benchFile;
+        if (is_callable($newBenchmark)) {
+            $benchmarks[$benchName] = $newBenchmark;
+            continue;
+        }
+
+        if (is_array($newBenchmark)) {
+            $newBenchmark = array_filter($newBenchmark, 'is_callable');
+            $newBenchmark = array_combine(array_map(function ($name) use ($benchName) {
+                return "{$benchName}::{$name}";
+            }, array_keys($newBenchmark)), $newBenchmark);
+
+            $benchmarks = array_merge($benchmarks, $newBenchmark);
+            continue;
+        }
+
+        throw new RuntimeException("Invalid benchmark file: {$benchFile}");
+    }
+
+    return $benchmarks;
+}
+
+function runBenchmark($stopwatch, $name, $benchmark, $multiplier = 1)
+{
+    $r = null;
+    try {
+        $stopwatch->start();
+        $r = $benchmark($multiplier);
+    } catch (Exception $e) {
+        return 'ERROR: ' . $e->getMessage();
+    } finally {
+        $time = $stopwatch->stop();
+    }
+
+    if ($r === INF) {
+        return 'SKIPPED';
+    }
+
+    return number_format($time, 4) . ' s';
 }
