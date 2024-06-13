@@ -8,10 +8,15 @@ if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION === 5 && PHP_MINOR_VERSION < 6))
 $defaultArgs = [
     // Increase the multiplier if you want to benchmark longer
     'multiplier' => 1.0,
+    'mysql_host' => '127.0.0.1',
+    'mysql_user' => null,
+    'mysql_password' => null,
+    'mysql_port' => 3306,
 ];
 
-$args = get_args($defaultArgs);
-$args = array_merge($defaultArgs, $args);
+$args = array_merge($defaultArgs, get_args($defaultArgs));
+$setupHooks = [];
+$cleanupHooks = [];
 
 /** @var array<string, callable> $benchmarks */
 // the benchmarks!
@@ -302,17 +307,21 @@ $p('Difficulty multiplier', "{$multiplier}x");
 $p('Started at', $now->format('d/m/Y H:i:s.v'));
 $p('', '', '-', STR_PAD_BOTH);
 
+foreach ($setupHooks as $hook) {
+    $hook($args);
+}
+
 $stopwatch = new StopWatch();
 
 foreach ($benchmarks as $name => $benchmark) {
-    $time = runBenchmark($stopwatch, $name, $benchmark, $multiplier);
+    $time = runBenchmark($stopwatch, $benchmark, $multiplier);
     $p($name, $time);
 }
 
 if (!empty($additionalBenchmarks)) {
     $p('Additional Benchmarks', '', '-', STR_PAD_BOTH);
     foreach ($additionalBenchmarks as $name => $benchmark) {
-        $time = runBenchmark($stopwatch, $name, $benchmark, $multiplier);
+        $time = runBenchmark($stopwatch, $benchmark, $multiplier);
         $p($name, $time);
     }
 }
@@ -322,6 +331,10 @@ $p('Total time', number_format($stopwatch->totalTime, 4) . ' s');
 $p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
 
 echo $isCli ? '' : '</pre>';
+
+foreach ($cleanupHooks as $hook) {
+    $hook($args);
+}
 
 
 class StopWatch
@@ -380,7 +393,7 @@ function get_args($expectedArgs)
 
     // cast the type to the original type if needed
     foreach ($expectedArgs as $key => $value) {
-        if (isset($args[$key])) {
+        if (isset($args[$key]) &&  $value !== null) {
             settype($args[$key], gettype($value));
         }
     }
@@ -416,7 +429,7 @@ function loadAdditionalBenchmarks()
     return $benchmarks;
 }
 
-function runBenchmark($stopwatch, $name, $benchmark, $multiplier = 1)
+function runBenchmark($stopwatch, $benchmark, $multiplier = 1)
 {
     $r = null;
     try {
@@ -433,4 +446,16 @@ function runBenchmark($stopwatch, $name, $benchmark, $multiplier = 1)
     }
 
     return number_format($time, 4) . ' s';
+}
+
+function setup(callable $hook)
+{
+    global $setupHooks;
+    $setupHooks[] = $hook;
+}
+
+function teardown(callable $hook)
+{
+    global $cleanupHooks;
+    $cleanupHooks[] = $hook;
 }
