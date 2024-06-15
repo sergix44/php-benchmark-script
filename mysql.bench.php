@@ -121,7 +121,7 @@ return [
         $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES " . implode(',', $values));
         return $i;
     },
-    'update' => function ($multiplier = 1, $count = 50) use (&$mysqli) {
+    'update' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
@@ -129,9 +129,26 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id % 2 = 0");
+            $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id = '$i'");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
+        return $i;
+    },
+    'update_with_index' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
+        if ($mysqli === null) {
+            return INF;
+        }
+
+        $mysqli->query("CREATE INDEX idx ON `bench_test`.`test` (id)");
+
+        $count = $count * $multiplier;
+        $time = StopWatch::time();
+        for ($i = 0; $i < $count; $i++) {
+            $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id = '$i'");
+        }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
+
+        $mysqli->query("DROP INDEX idx ON `bench_test`.`test`");
         return $i;
     },
     'transaction_insert' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -187,7 +204,7 @@ return [
         $stmt->close();
         return $i;
     },
-    'indexes' => function ($multiplier = 1, $count = 100) use (&$mysqli) {
+    'indexes' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
@@ -196,7 +213,7 @@ return [
         $mysqli->query("DROP INDEX idx_name ON `bench_test`.`test`");
         return 1;
     },
-    'delete' => function ($multiplier = 1, $count = 100) use (&$mysqli) {
+    'delete' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
@@ -204,7 +221,7 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("DELETE FROM `bench_test`.`test` WHERE id % 2 = 0");
+            $mysqli->query("DELETE FROM `bench_test`.`test` WHERE id = '$i'");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
