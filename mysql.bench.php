@@ -59,9 +59,13 @@ return [
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->query("SELECT VERSION()");
         }
+
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
+
         return $i;
     },
     'select_all' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -70,9 +74,11 @@ return [
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->query("SELECT * FROM `bench_test`.`test`");
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
     },
     'select_cursor' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -95,9 +101,11 @@ return [
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES ('test')");
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
     },
     'bulk_insert' => function ($multiplier = 1, $count = 100000) use (&$mysqli) {
@@ -113,15 +121,17 @@ return [
         $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES " . implode(',', $values));
         return $i;
     },
-    'update' => function ($multiplier = 1, $count = 100) use (&$mysqli) {
+    'update' => function ($multiplier = 1, $count = 50) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id % 2 = 0");
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
     },
     'transaction_insert' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -130,14 +140,16 @@ return [
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->begin_transaction();
             $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES ('test')");
             $mysqli->commit();
         }
+        extraStat('t/s', round($count / (StopWatch::time() - $time)));
         return $i;
     },
-    'aes_encrypt' => function ($multiplier = 1, $count = 10000) use (&$mysqli) {
+    'aes_encrypt' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
@@ -147,14 +159,16 @@ return [
 
         $data = str_repeat('a', 16);
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $stmt->execute();
             $stmt->get_result()->fetch_assoc();
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         $stmt->close();
         return $i;
     },
-    'aes_decrypt' => function ($multiplier = 1, $count = 10000) use (&$mysqli) {
+    'aes_decrypt' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
         if ($mysqli === null) {
             return INF;
         }
@@ -164,10 +178,12 @@ return [
 
         $data = str_repeat('a', 16);
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $stmt->execute();
             $stmt->get_result()->fetch_assoc();
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         $stmt->close();
         return $i;
     },
@@ -186,9 +202,11 @@ return [
         }
 
         $count = $count * $multiplier;
+        $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->query("DELETE FROM `bench_test`.`test` WHERE id % 2 = 0");
         }
+        extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
     },
 ];

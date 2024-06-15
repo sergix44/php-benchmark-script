@@ -274,38 +274,32 @@ $lf = $isCli ? PHP_EOL : '<br>';
 $w = 55;
 $multiplier = $args['multiplier'];
 $additionalBenchmarks = loadAdditionalBenchmarks();
-
-$p = function ($str, $endStr = '', $pad = '.', $mode = STR_PAD_RIGHT) use ($w, $lf) {
-    if (!empty($endStr)) {
-        $endStr = " $endStr";
-    }
-    $length = max(0, $w - strlen($endStr));
-    echo str_pad($str, $length, $pad, $mode) . $endStr . $lf;
-};
+$extraLines = [];
+$currentBenchmark = null;
 
 echo $isCli ? '' : '<pre>';
-$p('', '', '-');
+printLine('', '', '-');
 printf('|%s|%s', str_pad(sprintf("PHP BENCHMARK SCRIPT v.%s by @SergiX44", $V), $w - 2, ' ', STR_PAD_BOTH), $lf);
-$p('', '', '-');
-$p('PHP', PHP_VERSION);
-$p('Platform', PHP_OS);
-$p('Arch', php_uname('m'));
+printLine('', '', '-');
+printLine('PHP', PHP_VERSION);
+printLine('Platform', PHP_OS);
+printLine('Arch', php_uname('m'));
 if ($isCli) {
-    $p('Server', gethostname());
+    printLine('Server', gethostname());
 } else {
     $name = @$_SERVER['SERVER_NAME'] ?: 'null';
     $addr = @$_SERVER['SERVER_ADDR'] ?: 'null';
-    $p('Server', "{$name}@{$addr}");
+    printLine('Server', "{$name}@{$addr}");
 }
-$p('Max memory usage', ini_get('memory_limit'));
+printLine('Max memory usage', ini_get('memory_limit'));
 $opStatus = function_exists('opcache_get_status') ? opcache_get_status() : false;
-$p('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
-$p('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
-$p('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
-$p('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
-$p('Difficulty multiplier', "{$multiplier}x");
-$p('Started at', $now->format('d/m/Y H:i:s.v'));
-$p('', '', '-', STR_PAD_BOTH);
+printLine('OPCache status', is_array($opStatus) && @$opStatus['opcache_enabled'] ? 'enabled' : 'disabled');
+printLine('OPCache JIT', is_array($opStatus) && @$opStatus['jit']['enabled'] ? 'enabled' : 'disabled/unavailable');
+printLine('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
+printLine('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
+printLine('Difficulty multiplier', "{$multiplier}x");
+printLine('Started at', $now->format('d/m/Y H:i:s.v'));
+printLine('', '', '-', STR_PAD_BOTH);
 
 foreach ($setupHooks as $hook) {
     $hook($args);
@@ -314,27 +308,35 @@ foreach ($setupHooks as $hook) {
 $stopwatch = new StopWatch();
 
 foreach ($benchmarks as $name => $benchmark) {
+    $currentBenchmark = $name;
     $time = runBenchmark($stopwatch, $benchmark, $multiplier);
-    $p($name, $time);
+    printLine($name, $time);
 }
 
 if (!empty($additionalBenchmarks)) {
-    $p('Additional Benchmarks', '', '-', STR_PAD_BOTH);
+    printLine('Additional Benchmarks', '', '-', STR_PAD_BOTH);
     foreach ($additionalBenchmarks as $name => $benchmark) {
+        $currentBenchmark = $name;
         $time = runBenchmark($stopwatch, $benchmark, $multiplier);
-        $p($name, $time);
+        printLine($name, $time);
     }
 }
-
-$p('', '', '-');
-$p('Total time', number_format($stopwatch->totalTime, 4) . ' s');
-$p('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
-
-echo $isCli ? '' : '</pre>';
 
 foreach ($cleanupHooks as $hook) {
     $hook($args);
 }
+
+if  (!empty($extraLines)) {
+    printLine('Extra', '', '-', STR_PAD_BOTH);
+    foreach ($extraLines as $line) {
+        printLine($line[0], $line[1]);
+    }
+}
+
+printLine('', '', '-');
+printLine('Total time', number_format($stopwatch->totalTime, 4) . ' s');
+printLine('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
+echo $isCli ? '' : '</pre>';
 
 
 class StopWatch
@@ -352,7 +354,7 @@ class StopWatch
      */
     public function start()
     {
-        return $this->start = $this->t();
+        return $this->start = self::time();
     }
 
     /**
@@ -360,7 +362,7 @@ class StopWatch
      */
     public function stop()
     {
-        $time = $this->t() - $this->start;
+        $time = self::time() - $this->start;
         $this->totalTime += $time;
 
         return $time;
@@ -369,7 +371,7 @@ class StopWatch
     /**
      * @return float
      */
-    private function t()
+    public static function time()
     {
         return function_exists('hrtime') ? hrtime(true) / 1e9 : microtime(true);
     }
@@ -429,6 +431,12 @@ function loadAdditionalBenchmarks()
     return $benchmarks;
 }
 
+function extraStat($name, $value)
+{
+    global $extraLines, $currentBenchmark;
+    $extraLines[] = ["$currentBenchmark::$name", $value];
+}
+
 function runBenchmark($stopwatch, $benchmark, $multiplier = 1)
 {
     $r = null;
@@ -446,6 +454,16 @@ function runBenchmark($stopwatch, $benchmark, $multiplier = 1)
     }
 
     return number_format($time, 4) . ' s';
+}
+
+function printLine($str, $endStr = '', $pad = '.', $mode = STR_PAD_RIGHT) {
+    global $lf, $w;
+
+    if (!empty($endStr)) {
+        $endStr = " $endStr";
+    }
+    $length = max(0, $w - strlen($endStr));
+    echo str_pad($str, $length, $pad, $mode) . $endStr . $lf;
 }
 
 function setup(callable $hook)
