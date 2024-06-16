@@ -33,6 +33,9 @@ Available tests:
 wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/rand.bench.php
 # io: file read/write/zip/unzip
 wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/io.bench.php
+# mysql: selects, updates, deletes, transactions, ....
+# you need to pass the args --mysql_user=xxx --mysql_password=xxx --mysql_host=xxx
+wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/mysql.bench.php
 ```
 
 Then you can run the benchmark using:
