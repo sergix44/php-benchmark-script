@@ -34,7 +34,7 @@ wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/rand
 # io: file read/write/zip/unzip
 wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/io.bench.php
 # mysql: selects, updates, deletes, transactions, ....
-# you need to pass the args --mysql_user=xxx --mysql_password=xxx --mysql_host=xxx
+# you need to pass the args --mysql_user=xxx --mysql_password=xxx --mysql_host=xxx (optional: --mysql_port=xxx --mysql_database=xxx)
 wget https://raw.githubusercontent.com/SergiX44/php-benchmark-script/master/mysql.bench.php
 ```
 

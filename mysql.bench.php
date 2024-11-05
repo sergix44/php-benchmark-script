@@ -2,8 +2,17 @@
 
 $initialRowCount = 1000;
 $mysqli = null;
+$dbName = null;
 
-setup(function ($args) use (&$mysqli, $initialRowCount) {
+pushArgs([
+    'mysql_host' => '127.0.0.1',
+    'mysql_user' => null,
+    'mysql_password' => null,
+    'mysql_port' => 3306,
+    'mysql_database' => null,
+]);
+
+setup(function ($args) use (&$mysqli, $initialRowCount, &$dbName) {
     if (!extension_loaded('mysqli')) {
         print('The mysqli extension is not loaded' . PHP_EOL);
         return;
@@ -22,25 +31,42 @@ setup(function ($args) use (&$mysqli, $initialRowCount) {
         return;
     }
 
-    // drop database
-    $mysqli->query("DROP DATABASE IF EXISTS `bench_test`");
-    // create database
-    $mysqli->query("CREATE DATABASE IF NOT EXISTS `bench_test`");
-    $mysqli->select_db('bench_test');
-    $mysqli->query("CREATE TABLE IF NOT EXISTS `bench_test`.`test` (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255))");
+    $dbName = $args['mysql_database'] ?? 'bench_test';
+
+    // check if database exists
+    $result = $mysqli->query("SELECT schema_name FROM information_schema.schemata WHERE schema_name = '$dbName'");
+
+    // if exists, delete all tables
+    if ($result->num_rows > 0) {
+        $result = $mysqli->query("SELECT table_name FROM information_schema.tables WHERE table_schema = '$dbName'");
+        while ($row = $result->fetch_assoc()) {
+            $mysqli->query("DROP TABLE IF EXISTS `$dbName`.`{$row['table_name']}`");
+        }
+    } else {
+        $mysqli->query("CREATE DATABASE IF NOT EXISTS `$dbName`");
+    }
+
+    $mysqli->select_db($dbName);
+    $mysqli->query("CREATE TABLE IF NOT EXISTS `$dbName`.`test` (id INT PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255))");
 
     for ($i = 0; $i < $initialRowCount; $i++) {
         $values[] = "('test$i')";
     }
-    $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES " . implode(',', $values));
+    $r = $mysqli->query("INSERT INTO `$dbName`.`test` (name) VALUES " . implode(',', $values));
+    if (!$r) {
+        printf("Mysql Error (%s) %s\n", $mysqli->errno, $mysqli->error);
+    }
 });
 
-teardown(function () use (&$mysqli) {
+teardown(function () use (&$mysqli, $dbName) {
     if ($mysqli === null) {
         return;
     }
 
-    $mysqli->query("DROP DATABASE IF EXISTS `bench_test`");
+    $result = $mysqli->query("SELECT table_name FROM information_schema.tables WHERE table_schema = '$dbName'");
+    while ($row = $result->fetch_assoc()) {
+        $mysqli->query("DROP TABLE IF EXISTS `$dbName`.`{$row['table_name']}`");
+    }
     $mysqli->close();
 });
 
@@ -76,7 +102,7 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("SELECT * FROM `bench_test`.`test`");
+            $mysqli->query("SELECT * FROM `test`");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
@@ -88,7 +114,7 @@ return [
 
         $count = $count * $multiplier;
         for ($i = 0; $i < $count; $i++) {
-            $result = $mysqli->query("SELECT * FROM `bench_test`.`test`");
+            $result = $mysqli->query("SELECT * FROM `test`");
             while ($row = $result->fetch_assoc()) {
             }
             $result->close();
@@ -103,7 +129,7 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES ('test')");
+            $mysqli->query("INSERT INTO `test` (name) VALUES ('test')");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
@@ -118,7 +144,7 @@ return [
         for ($i = 0; $i < $count; $i++) {
             $values[] = "('test$i')";
         }
-        $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES " . implode(',', $values));
+        $mysqli->query("INSERT INTO `test` (name) VALUES " . implode(',', $values));
         return $i;
     },
     'update' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -129,7 +155,7 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id = '$i'");
+            $mysqli->query("UPDATE `test` SET name = 'test' WHERE id = '$i'");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;
@@ -139,16 +165,16 @@ return [
             return INF;
         }
 
-        $mysqli->query("CREATE INDEX idx ON `bench_test`.`test` (id)");
+        $mysqli->query("CREATE INDEX idx ON `test` (id)");
 
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("UPDATE `bench_test`.`test` SET name = 'test' WHERE id = '$i'");
+            $mysqli->query("UPDATE `test` SET name = 'test' WHERE id = '$i'");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
 
-        $mysqli->query("DROP INDEX idx ON `bench_test`.`test`");
+        $mysqli->query("DROP INDEX idx ON `test`");
         return $i;
     },
     'transaction_insert' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -160,7 +186,7 @@ return [
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
             $mysqli->begin_transaction();
-            $mysqli->query("INSERT INTO `bench_test`.`test` (name) VALUES ('test')");
+            $mysqli->query("INSERT INTO `test` (name) VALUES ('test')");
             $mysqli->commit();
         }
         extraStat('t/s', round($count / (StopWatch::time() - $time)));
@@ -209,8 +235,8 @@ return [
             return INF;
         }
 
-        $mysqli->query("CREATE INDEX idx_name ON `bench_test`.`test` (name)");
-        $mysqli->query("DROP INDEX idx_name ON `bench_test`.`test`");
+        $mysqli->query("CREATE INDEX idx_name ON `test` (name)");
+        $mysqli->query("DROP INDEX idx_name ON `test`");
         return 1;
     },
     'delete' => function ($multiplier = 1, $count = 1000) use (&$mysqli) {
@@ -221,7 +247,7 @@ return [
         $count = $count * $multiplier;
         $time = StopWatch::time();
         for ($i = 0; $i < $count; $i++) {
-            $mysqli->query("DELETE FROM `bench_test`.`test` WHERE id = '$i'");
+            $mysqli->query("DELETE FROM `test` WHERE id = '$i'");
         }
         extraStat('q/s', round($count / (StopWatch::time() - $time)));
         return $i;

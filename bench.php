@@ -8,15 +8,12 @@ if (PHP_MAJOR_VERSION < 5 || (PHP_MAJOR_VERSION === 5 && PHP_MINOR_VERSION < 6))
 $defaultArgs = [
     // Increase the multiplier if you want to benchmark longer
     'multiplier' => 1.0,
-    'mysql_host' => '127.0.0.1',
-    'mysql_user' => null,
-    'mysql_password' => null,
-    'mysql_port' => 3306,
 ];
-
-$args = array_merge($defaultArgs, get_args($defaultArgs));
 $setupHooks = [];
 $cleanupHooks = [];
+
+$additionalBenchmarks = loadAdditionalBenchmarks();
+$args = array_merge($defaultArgs, get_args($defaultArgs));
 
 /** @var array<string, callable> $benchmarks */
 // the benchmarks!
@@ -273,7 +270,6 @@ $isCli = PHP_SAPI === 'cli';
 $lf = $isCli ? PHP_EOL : '<br>';
 $w = 55;
 $multiplier = $args['multiplier'];
-$additionalBenchmarks = loadAdditionalBenchmarks();
 $extraLines = [];
 $currentBenchmark = null;
 
@@ -299,11 +295,12 @@ printLine('PCRE JIT', ini_get('pcre.jit') ? 'enabled' : 'disabled');
 printLine('XDebug extension', extension_loaded('xdebug') ? 'enabled' : 'disabled');
 printLine('Difficulty multiplier', "{$multiplier}x");
 printLine('Started at', $now->format('d/m/Y H:i:s.v'));
-printLine('', '', '-', STR_PAD_BOTH);
 
 foreach ($setupHooks as $hook) {
     $hook($args);
 }
+
+printLine('', '', '-', STR_PAD_BOTH);
 
 $stopwatch = new StopWatch();
 
@@ -322,11 +319,7 @@ if (!empty($additionalBenchmarks)) {
     }
 }
 
-foreach ($cleanupHooks as $hook) {
-    $hook($args);
-}
-
-if  (!empty($extraLines)) {
+if (!empty($extraLines)) {
     printLine('Extra', '', '-', STR_PAD_BOTH);
     foreach ($extraLines as $line) {
         printLine($line[0], $line[1]);
@@ -334,6 +327,10 @@ if  (!empty($extraLines)) {
 }
 
 printLine('', '', '-');
+foreach ($cleanupHooks as $hook) {
+    $hook($args);
+}
+
 printLine('Total time', number_format($stopwatch->totalTime, 4) . ' s');
 printLine('Peak memory usage', round(memory_get_peak_usage(true) / 1024 / 1024, 2) . ' MiB');
 echo $isCli ? '' : '</pre>';
@@ -395,7 +392,7 @@ function get_args($expectedArgs)
 
     // cast the type to the original type if needed
     foreach ($expectedArgs as $key => $value) {
-        if (isset($args[$key]) &&  $value !== null) {
+        if (isset($args[$key]) && $value !== null) {
             settype($args[$key], gettype($value));
         }
     }
@@ -456,7 +453,8 @@ function runBenchmark($stopwatch, $benchmark, $multiplier = 1)
     return number_format($time, 4) . ' s';
 }
 
-function printLine($str, $endStr = '', $pad = '.', $mode = STR_PAD_RIGHT) {
+function printLine($str, $endStr = '', $pad = '.', $mode = STR_PAD_RIGHT)
+{
     global $lf, $w;
 
     if (!empty($endStr)) {
@@ -476,4 +474,10 @@ function teardown(callable $hook)
 {
     global $cleanupHooks;
     $cleanupHooks[] = $hook;
+}
+
+function pushArgs($args)
+{
+    global $defaultArgs;
+    $defaultArgs = array_merge($defaultArgs, $args);
 }
