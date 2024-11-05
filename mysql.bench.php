@@ -31,7 +31,7 @@ setup(function ($args) use (&$mysqli, $initialRowCount, &$dbName) {
         return;
     }
 
-    $dbName = $args['mysql_database'] ?? 'bench_test';
+    $dbName = isset($args['mysql_database']) ? $args['mysql_database'] : 'bench_test';
 
     // check if database exists
     $result = $mysqli->query("SELECT schema_name FROM information_schema.schemata WHERE schema_name = '$dbName'");
